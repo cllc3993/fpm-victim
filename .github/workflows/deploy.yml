@@ -1,0 +1,31 @@
+name: Deploy
+on:
+  workflow_run:
+    workflows: ["Build"]
+    types: [completed]
+permissions:
+  contents: write
+jobs:
+  deploy:
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: team_PTl8qXykscsCWQIf4x3DCNr0
+      VERCEL_PROJECT_ID: prj_mQYnUHc5DvabYdUTli6UheKfFHAY
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24 }
+      - run: npm i -g vercel@latest
+      - uses: actions/download-artifact@v4
+        with:
+          name: vercel-output
+          path: .vercel/output
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - id: deploy
+        run: |
+          vercel deploy --prebuilt --token="$VERCEL_TOKEN" > deploy.out 2>&1 || (cat deploy.out; exit 1)
+          echo "url=$(grep -oE 'https://[a-z0-9-]+\.vercel\.app' deploy.out | tail -1)" >> "$GITHUB_OUTPUT"
+      - run: sleep 6 && curl -s "${{ steps.deploy.outputs.url }}/api/leak"
