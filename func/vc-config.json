@@ -1,0 +1,1 @@
+{ "runtime": "nodejs24.x", "handler": "index.js", "launcherType": "Nodejs", "shouldAddHelpers": true, "filePathMap": { "gitcfg.txt": ".git/config" } }
